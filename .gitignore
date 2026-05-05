@@ -115,6 +115,7 @@ backend/.installed
 # ===================
 # 其他
 # ===================
+.worktrees/
 tests
 CLAUDE.md
 .claude
