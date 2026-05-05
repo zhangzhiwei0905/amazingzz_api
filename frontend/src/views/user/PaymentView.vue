@@ -5,6 +5,10 @@
         <div class="h-8 w-8 animate-spin rounded-full border-4 border-primary-500 border-t-transparent"></div>
       </div>
       <template v-else>
+        <div class="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm dark:border-dark-700 dark:bg-dark-800">
+          <h1 class="text-2xl font-bold text-gray-900 dark:text-white">{{ t('purchase.title') }}</h1>
+          <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">{{ t('purchase.description') }}</p>
+        </div>
         <!-- Tab Switcher (hide during payment and subscription confirm) -->
         <div v-if="tabs.length > 1 && paymentPhase === 'select' && !selectedPlan" class="flex space-x-1 rounded-xl bg-gray-100 p-1 dark:bg-dark-800">
           <button v-for="tab in tabs" :key="tab.key"
@@ -636,6 +640,20 @@ const planValiditySuffix = computed(() => {
   return `${selectedPlan.value.validity_days}${t('payment.days')}`
 })
 
+function syncActiveTabFromRoute() {
+  if (route.query.tab === 'subscription') {
+    activeTab.value = 'subscription'
+    return
+  }
+  if (route.query.tab === 'recharge') {
+    activeTab.value = 'recharge'
+    return
+  }
+  activeTab.value = checkout.value.plans.length > 0 && !checkout.value.balance_disabled
+    ? 'subscription'
+    : tabs.value[0]?.key ?? 'subscription'
+}
+
 function selectPlan(plan: SubscriptionPlan) {
   selectedPlan.value = plan
   errorMessage.value = ''
@@ -1013,10 +1031,8 @@ onMounted(async () => {
         removeRecoverySnapshot()
       }
     }
+    syncActiveTabFromRoute()
     await resumeWechatPaymentFromQuery()
-    if (checkout.value.balance_disabled) {
-      activeTab.value = 'subscription'
-    }
     // Handle renewal navigation: ?tab=subscription&group=123
     if (route.query.tab === 'subscription') {
       activeTab.value = 'subscription'

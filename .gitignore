@@ -112,6 +112,21 @@ backend/config.yaml
 deploy/config.yaml
 backend/.installed
 
+# Docker 本地运行数据
+.worktrees/
+deploy/data/
+deploy/postgres_data/
+deploy/redis_data/
+
+# 常见本地密钥/证书
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+*.sqlite
+*.db
+
 # ===================
 # 其他
 # ===================

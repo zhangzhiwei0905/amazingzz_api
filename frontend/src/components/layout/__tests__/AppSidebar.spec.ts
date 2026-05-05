@@ -53,5 +53,11 @@ describe('AppSidebar subscription plan shelf navigation', () => {
     expect(componentSource).toContain("label: t('nav.subscriptionPlanShelf')")
     expect(componentSource).not.toContain("path: '/admin/subscription-plans', label: t('nav.subscriptionPlanShelf'), icon: CreditCardIcon, hideInSimpleMode: true, featureFlag: flagAdminPayment")
     expect(componentSource).not.toContain("path: '/admin/orders/plans', label: t('nav.paymentPlans')")
+    expect(componentSource).not.toContain("path: '/admin/orders/plans', label: t('nav.packageManagement')")
+  })
+
+  it('keeps the user packages and recharge entry on /purchase', () => {
+    expect(componentSource).toContain("path: '/purchase'")
+    expect(componentSource).toContain("label: t('nav.buySubscription')")
   })
 })
