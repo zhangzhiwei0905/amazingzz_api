@@ -30,6 +30,14 @@
             >
               <Icon name="refresh" size="md" :class="loading ? 'animate-spin' : ''" />
             </button>
+            <button
+              @click="openImageStorageDialog"
+              class="btn btn-secondary"
+              :title="t('admin.announcements.imageStorage.button')"
+            >
+              <Icon name="cloud" size="md" class="mr-1" />
+              {{ t('admin.announcements.imageStorage.button') }}
+            </button>
             <button @click="openCreateDialog" class="btn btn-primary">
               <Icon name="plus" size="md" class="mr-1" />
               {{ t('admin.announcements.createAnnouncement') }}
@@ -176,7 +184,7 @@
 
         <div>
           <label class="input-label">{{ t('admin.announcements.form.content') }}</label>
-          <textarea v-model="form.content" rows="6" class="input" required></textarea>
+          <AnnouncementMarkdownEditor v-model="form.content" />
         </div>
 
         <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -240,6 +248,65 @@
       :announcement-id="readStatusAnnouncementId"
       @close="showReadStatusDialog = false"
     />
+
+    <!-- Image Storage Dialog -->
+    <BaseDialog
+      :show="showImageStorageDialog"
+      :title="t('admin.announcements.imageStorage.title')"
+      width="wide"
+      @close="showImageStorageDialog = false"
+    >
+      <form id="announcement-image-storage-form" class="space-y-4" @submit.prevent="handleSaveImageStorage">
+        <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div>
+            <label class="input-label">{{ t('admin.announcements.imageStorage.endpoint') }}</label>
+            <input v-model="imageStorageForm.endpoint" type="url" class="input" placeholder="https://oss-cn-hangzhou.aliyuncs.com" required />
+          </div>
+          <div>
+            <label class="input-label">{{ t('admin.announcements.imageStorage.region') }}</label>
+            <input v-model="imageStorageForm.region" type="text" class="input" placeholder="cn-hangzhou" required />
+          </div>
+          <div>
+            <label class="input-label">{{ t('admin.announcements.imageStorage.bucket') }}</label>
+            <input v-model="imageStorageForm.bucket" type="text" class="input" required />
+          </div>
+          <div>
+            <label class="input-label">{{ t('admin.announcements.imageStorage.objectPrefix') }}</label>
+            <input v-model="imageStorageForm.object_prefix" type="text" class="input" placeholder="announcements/" required />
+            <p class="input-hint">{{ t('admin.announcements.imageStorage.objectPrefixHint') }}</p>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div>
+            <label class="input-label">{{ t('admin.announcements.imageStorage.accessKeyId') }}</label>
+            <input v-model="imageStorageForm.access_key_id" type="text" class="input" autocomplete="off" required />
+          </div>
+          <div>
+            <label class="input-label">{{ t('admin.announcements.imageStorage.secretAccessKey') }}</label>
+            <input v-model="imageStorageForm.secret_access_key" type="password" class="input" autocomplete="new-password" />
+            <p class="input-hint">{{ t('admin.announcements.imageStorage.secretHint') }}</p>
+          </div>
+        </div>
+
+        <div>
+          <label class="input-label">{{ t('admin.announcements.imageStorage.publicBaseUrl') }}</label>
+          <input v-model="imageStorageForm.public_base_url" type="url" class="input" placeholder="https://cdn.example.com" required />
+          <p class="input-hint">{{ t('admin.announcements.imageStorage.publicBaseUrlHint') }}</p>
+        </div>
+      </form>
+
+      <template #footer>
+        <div class="flex justify-end gap-3">
+          <button type="button" @click="showImageStorageDialog = false" class="btn btn-secondary">
+            {{ t('common.cancel') }}
+          </button>
+          <button type="submit" form="announcement-image-storage-form" :disabled="imageStorageSaving" class="btn btn-primary">
+            {{ imageStorageSaving ? t('common.saving') : t('common.save') }}
+          </button>
+        </div>
+      </template>
+    </BaseDialog>
   </AppLayout>
 </template>
 
@@ -249,6 +316,7 @@ import { useI18n } from 'vue-i18n'
 import { useAppStore } from '@/stores/app'
 import { getPersistedPageSize } from '@/composables/usePersistedPageSize'
 import { adminAPI } from '@/api/admin'
+import type { AnnouncementImageStorageConfig } from '@/api/admin/announcements'
 import { formatDateTime, formatDateTimeLocalInput, parseDateTimeLocalInput } from '@/utils/format'
 import type { AdminGroup, Announcement, AnnouncementTargeting } from '@/types'
 import type { Column } from '@/components/common/types'
@@ -265,6 +333,7 @@ import Icon from '@/components/icons/Icon.vue'
 
 import AnnouncementTargetingEditor from '@/components/admin/announcements/AnnouncementTargetingEditor.vue'
 import AnnouncementReadStatusDialog from '@/components/admin/announcements/AnnouncementReadStatusDialog.vue'
+import AnnouncementMarkdownEditor from '@/components/admin/announcements/AnnouncementMarkdownEditor.vue'
 
 const { t } = useI18n()
 const appStore = useAppStore()
@@ -425,6 +494,18 @@ const form = reactive({
 
 const subscriptionGroups = ref<AdminGroup[]>([])
 
+const showImageStorageDialog = ref(false)
+const imageStorageSaving = ref(false)
+const imageStorageForm = reactive<AnnouncementImageStorageConfig>({
+  endpoint: '',
+  region: '',
+  bucket: '',
+  access_key_id: '',
+  secret_access_key: '',
+  public_base_url: '',
+  object_prefix: 'announcements/'
+})
+
 async function loadSubscriptionGroups() {
   try {
     const all = await adminAPI.groups.getAll()
@@ -432,6 +513,52 @@ async function loadSubscriptionGroups() {
   } catch (error: any) {
     console.error('Error loading groups:', error)
     // not fatal
+  }
+}
+
+function fillImageStorageForm(cfg?: AnnouncementImageStorageConfig) {
+  imageStorageForm.endpoint = cfg?.endpoint ?? ''
+  imageStorageForm.region = cfg?.region ?? ''
+  imageStorageForm.bucket = cfg?.bucket ?? ''
+  imageStorageForm.access_key_id = cfg?.access_key_id ?? ''
+  imageStorageForm.secret_access_key = ''
+  imageStorageForm.public_base_url = cfg?.public_base_url ?? ''
+  imageStorageForm.object_prefix = cfg?.object_prefix || 'announcements/'
+}
+
+async function openImageStorageDialog() {
+  showImageStorageDialog.value = true
+  try {
+    const cfg = await adminAPI.announcements.getImageStorage()
+    fillImageStorageForm(cfg)
+  } catch (error: any) {
+    console.error('Failed to load announcement image storage:', error)
+    fillImageStorageForm()
+    appStore.showError(error.response?.data?.detail || t('admin.announcements.imageStorage.failedToLoad'))
+  }
+}
+
+async function handleSaveImageStorage() {
+  imageStorageSaving.value = true
+  try {
+    const payload: AnnouncementImageStorageConfig = {
+      endpoint: imageStorageForm.endpoint,
+      region: imageStorageForm.region,
+      bucket: imageStorageForm.bucket,
+      access_key_id: imageStorageForm.access_key_id,
+      secret_access_key: imageStorageForm.secret_access_key || undefined,
+      public_base_url: imageStorageForm.public_base_url,
+      object_prefix: imageStorageForm.object_prefix || 'announcements/'
+    }
+    const saved = await adminAPI.announcements.updateImageStorage(payload)
+    fillImageStorageForm(saved)
+    appStore.showSuccess(t('common.success'))
+    showImageStorageDialog.value = false
+  } catch (error: any) {
+    console.error('Failed to save announcement image storage:', error)
+    appStore.showError(error.response?.data?.detail || t('admin.announcements.imageStorage.failedToSave'))
+  } finally {
+    imageStorageSaving.value = false
   }
 }
 

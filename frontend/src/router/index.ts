@@ -587,13 +587,23 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/admin/orders/plans',
     name: 'AdminPaymentPlans',
-    component: () => import('@/views/admin/orders/AdminPaymentPlansView.vue'),
+    redirect: '/admin/subscription-plans',
     meta: {
       requiresAuth: true,
       requiresAdmin: true,
       title: 'Subscription Plans',
-      titleKey: 'nav.paymentPlans',
-      requiresPayment: true
+      titleKey: 'nav.subscriptionPlanShelf'
+    }
+  },
+  {
+    path: '/admin/subscription-plans',
+    name: 'AdminSubscriptionPlanShelf',
+    component: () => import('@/views/admin/orders/AdminPaymentPlansView.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: true,
+      title: 'Subscription Plan Shelf',
+      titleKey: 'nav.subscriptionPlanShelf'
     }
   },
 

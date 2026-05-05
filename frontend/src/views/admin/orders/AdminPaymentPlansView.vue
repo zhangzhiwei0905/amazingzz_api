@@ -1,6 +1,16 @@
 <template>
   <AppLayout>
     <div class="space-y-4">
+      <div v-if="subscriptionGroups.length === 0 && !plansLoading" class="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 dark:border-amber-900/60 dark:bg-amber-900/20 dark:text-amber-200">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p class="font-medium">{{ t('payment.admin.noSubscriptionGroups') }}</p>
+            <p class="mt-1">{{ t('payment.admin.subscriptionGroupHint') }}</p>
+          </div>
+          <router-link to="/admin/groups" class="btn btn-secondary shrink-0">{{ t('payment.admin.createSubscriptionGroup') }}</router-link>
+        </div>
+      </div>
+
       <!-- Actions -->
       <div class="flex items-center justify-end gap-2">
         <button @click="loadPlans" :disabled="plansLoading" class="btn btn-secondary" :title="t('common.refresh')">
@@ -97,6 +107,7 @@ const appStore = useAppStore()
 // ==================== Groups ====================
 
 const groups = ref<AdminGroup[]>([])
+const subscriptionGroups = computed(() => groups.value.filter(g => g.subscription_type === 'subscription'))
 
 async function loadGroups() {
   try {

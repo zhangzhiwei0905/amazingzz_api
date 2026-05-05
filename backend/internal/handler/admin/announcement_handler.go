@@ -1,6 +1,7 @@
 package admin
 
 import (
+	"net/http"
 	"strconv"
 	"strings"
 	"time"
@@ -17,12 +18,18 @@ import (
 // AnnouncementHandler handles admin announcement management
 type AnnouncementHandler struct {
 	announcementService *service.AnnouncementService
+	imageService        *service.AnnouncementImageService
 }
 
 // NewAnnouncementHandler creates a new admin announcement handler
-func NewAnnouncementHandler(announcementService *service.AnnouncementService) *AnnouncementHandler {
+func NewAnnouncementHandler(announcementService *service.AnnouncementService, imageServices ...*service.AnnouncementImageService) *AnnouncementHandler {
+	var imageService *service.AnnouncementImageService
+	if len(imageServices) > 0 {
+		imageService = imageServices[0]
+	}
 	return &AnnouncementHandler{
 		announcementService: announcementService,
+		imageService:        imageService,
 	}
 }
 
@@ -253,4 +260,75 @@ func (h *AnnouncementHandler) ListReadStatus(c *gin.Context) {
 	}
 
 	response.Paginated(c, items, paginationResult.Total, page, pageSize)
+}
+
+// GetImageStorage handles reading masked announcement image storage settings.
+// GET /api/v1/admin/announcements/image-storage
+func (h *AnnouncementHandler) GetImageStorage(c *gin.Context) {
+	if h.imageService == nil {
+		response.ErrorFrom(c, service.ErrAnnouncementImageStorageNotConfigured)
+		return
+	}
+	cfg, err := h.imageService.GetStorageConfig(c.Request.Context())
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, cfg)
+}
+
+// UpdateImageStorage handles saving announcement image storage settings.
+// PUT /api/v1/admin/announcements/image-storage
+func (h *AnnouncementHandler) UpdateImageStorage(c *gin.Context) {
+	if h.imageService == nil {
+		response.ErrorFrom(c, service.ErrAnnouncementImageStorageNotConfigured)
+		return
+	}
+	var req service.AnnouncementImageStorageConfig
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "Invalid request: "+err.Error())
+		return
+	}
+	if err := h.imageService.UpdateStorageConfig(c.Request.Context(), req); err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	cfg, err := h.imageService.GetStorageConfig(c.Request.Context())
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, cfg)
+}
+
+// UploadImage handles uploading a pasted announcement image.
+// POST /api/v1/admin/announcements/images
+func (h *AnnouncementHandler) UploadImage(c *gin.Context) {
+	if h.imageService == nil {
+		response.ErrorFrom(c, service.ErrAnnouncementImageStorageNotConfigured)
+		return
+	}
+	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, service.AnnouncementImageMaxBytes+1024)
+	fileHeader, err := c.FormFile("image")
+	if err != nil {
+		response.BadRequest(c, "image file is required")
+		return
+	}
+	if fileHeader.Size > service.AnnouncementImageMaxBytes {
+		response.ErrorFrom(c, service.ErrAnnouncementImageTooLarge)
+		return
+	}
+	file, err := fileHeader.Open()
+	if err != nil {
+		response.BadRequest(c, "failed to open image file")
+		return
+	}
+	defer file.Close()
+
+	result, err := h.imageService.UploadImage(c.Request.Context(), fileHeader.Filename, fileHeader.Header.Get("Content-Type"), file, fileHeader.Size)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, result)
 }

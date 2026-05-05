@@ -30,3 +30,12 @@ describe('AppSidebar header styles', () => {
     expect(sidebarBrandBlockMatch?.[0]).not.toContain('overflow: hidden;')
   })
 })
+
+describe('AppSidebar subscription plan shelf navigation', () => {
+  it('exposes subscription plan shelf as a dedicated admin menu item', () => {
+    expect(componentSource).toContain("path: '/admin/subscription-plans'")
+    expect(componentSource).toContain("label: t('nav.subscriptionPlanShelf')")
+    expect(componentSource).not.toContain("path: '/admin/subscription-plans', label: t('nav.subscriptionPlanShelf'), icon: CreditCardIcon, hideInSimpleMode: true, featureFlag: flagAdminPayment")
+    expect(componentSource).not.toContain("path: '/admin/orders/plans', label: t('nav.paymentPlans')")
+  })
+})

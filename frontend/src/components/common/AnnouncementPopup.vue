@@ -86,24 +86,16 @@
 <script setup lang="ts">
 import { computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { marked } from 'marked'
-import DOMPurify from 'dompurify'
 import { useAnnouncementStore } from '@/stores/announcements'
 import { formatRelativeWithDateTime } from '@/utils/format'
+import { renderSafeMarkdown } from '@/utils/markdown'
 
 const { t } = useI18n()
 const announcementStore = useAnnouncementStore()
 
-marked.setOptions({
-  breaks: true,
-  gfm: true,
-})
-
 const renderedContent = computed(() => {
   const content = announcementStore.currentPopup?.content
-  if (!content) return ''
-  const html = marked.parse(content) as string
-  return DOMPurify.sanitize(html)
+  return renderSafeMarkdown(content || '')
 })
 
 function handleDismiss() {
@@ -161,5 +153,13 @@ watch(
 
 .dark .overflow-y-auto::-webkit-scrollbar-thumb {
   background: linear-gradient(to bottom, #4b5563, #374151);
+}
+
+:deep(.markdown-body img) {
+  margin: 1.25rem 0;
+  max-width: 100%;
+  border-radius: 0.75rem;
+  border: 1px solid rgb(229 231 235);
+  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
 }
 </style>

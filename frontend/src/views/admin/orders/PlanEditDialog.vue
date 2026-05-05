@@ -21,6 +21,12 @@
         </div>
       </div>
 
+      <div v-if="groupOptions.length === 0" class="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-900/60 dark:bg-amber-900/20 dark:text-amber-200">
+        <p class="font-medium">{{ t('payment.admin.noSubscriptionGroups') }}</p>
+        <p class="mt-1">{{ t('payment.admin.subscriptionGroupHint') }}</p>
+        <router-link to="/admin/groups" class="mt-3 inline-flex btn btn-secondary" @click="emit('close')">{{ t('payment.admin.createSubscriptionGroup') }}</router-link>
+      </div>
+
       <!-- Group Info Preview -->
       <div v-if="selectedGroupInfo" class="rounded-lg border border-gray-200 bg-gray-50 p-3 dark:border-dark-600 dark:bg-dark-800">
         <div class="mb-2 flex items-center gap-2">

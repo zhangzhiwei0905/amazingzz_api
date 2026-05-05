@@ -92,6 +92,22 @@ describe('API Client', () => {
       expect(config.params?.timezone).toBeUndefined()
     })
 
+    it('FormData 请求不附加 JSON Content-Type', async () => {
+      const adapter = vi.fn().mockResolvedValue({
+        status: 200,
+        data: { code: 0, data: {} },
+        headers: {},
+        config: {},
+        statusText: 'OK',
+      })
+      apiClient.defaults.adapter = adapter
+
+      await apiClient.post('/upload', new FormData())
+
+      const config = adapter.mock.calls[0][0]
+      expect(config.headers.get('Content-Type')).toBeFalsy()
+    })
+
     it('请求默认带 withCredentials 以支持跨域 cookie', async () => {
       const adapter = vi.fn().mockResolvedValue({
         status: 200,

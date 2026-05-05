@@ -11,6 +11,24 @@ import type {
   UpdateAnnouncementRequest
 } from '@/types'
 
+export interface AnnouncementImageStorageConfig {
+  endpoint: string
+  region: string
+  bucket: string
+  access_key_id: string
+  secret_access_key?: string
+  has_secret_access_key?: boolean
+  public_base_url: string
+  object_prefix: string
+}
+
+export interface AnnouncementImageUploadResult {
+  url: string
+  key: string
+  content_type: string
+  size: number
+}
+
 export async function list(
   page: number = 1,
   pageSize: number = 20,
@@ -74,13 +92,33 @@ export async function getReadStatus(
   return data
 }
 
+export async function getImageStorage(): Promise<AnnouncementImageStorageConfig> {
+  const { data } = await apiClient.get<AnnouncementImageStorageConfig>('/admin/announcements/image-storage')
+  return data
+}
+
+export async function updateImageStorage(request: AnnouncementImageStorageConfig): Promise<AnnouncementImageStorageConfig> {
+  const { data } = await apiClient.put<AnnouncementImageStorageConfig>('/admin/announcements/image-storage', request)
+  return data
+}
+
+export async function uploadImage(file: File): Promise<AnnouncementImageUploadResult> {
+  const form = new FormData()
+  form.append('image', file)
+  const { data } = await apiClient.post<AnnouncementImageUploadResult>('/admin/announcements/images', form)
+  return data
+}
+
 const announcementsAPI = {
   list,
   getById,
   create,
   update,
   delete: deleteAnnouncement,
-  getReadStatus
+  getReadStatus,
+  getImageStorage,
+  updateImageStorage,
+  uploadImage
 }
 
 export default announcementsAPI

@@ -207,7 +207,6 @@ func (a *Alipay) createPagePayTrade(client *alipay.Client, req payment.CreatePay
 	return &payment.CreatePaymentResponse{
 		TradeNo: req.OrderID,
 		PayURL:  payURL.String(),
-		QRCode:  payURL.String(),
 	}, nil
 }
 

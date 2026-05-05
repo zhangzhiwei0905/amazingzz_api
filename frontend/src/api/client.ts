@@ -74,6 +74,11 @@ apiClient.interceptors.request.use(
       config.params.timezone = getUserTimezone()
     }
 
+    if (config.data instanceof FormData && config.headers) {
+      delete config.headers['Content-Type']
+      delete config.headers['content-type']
+    }
+
     return config
   },
   (error) => {
