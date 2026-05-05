@@ -53,10 +53,7 @@
             <div class="relative">
               <div class="absolute left-0 top-0 bottom-0 w-1 rounded-full bg-gradient-to-b from-amber-500 via-orange-500 to-yellow-500"></div>
               <div class="pl-6">
-                <div
-                  class="markdown-body prose prose-sm max-w-none dark:prose-invert"
-                  v-html="renderedContent"
-                ></div>
+                <AnnouncementMarkdown :content="announcementStore.currentPopup.content" />
               </div>
             </div>
           </div>
@@ -84,27 +81,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed, watch } from 'vue'
+import { watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { marked } from 'marked'
-import DOMPurify from 'dompurify'
 import { useAnnouncementStore } from '@/stores/announcements'
 import { formatRelativeWithDateTime } from '@/utils/format'
+import AnnouncementMarkdown from '@/components/common/AnnouncementMarkdown.vue'
 
 const { t } = useI18n()
 const announcementStore = useAnnouncementStore()
-
-marked.setOptions({
-  breaks: true,
-  gfm: true,
-})
-
-const renderedContent = computed(() => {
-  const content = announcementStore.currentPopup?.content
-  if (!content) return ''
-  const html = marked.parse(content) as string
-  return DOMPurify.sanitize(html)
-})
 
 function handleDismiss() {
   announcementStore.dismissPopup()

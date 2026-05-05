@@ -162,6 +162,22 @@ function jsapiOrderFixture(resumeToken: string) {
   }
 }
 
+const renderLayoutStubs = {
+  AppLayout: {
+    template: '<div><slot /></div>',
+  },
+  Teleport: true,
+  Transition: false,
+}
+
+function mountPaymentViewWithLayout() {
+  return shallowMount(PaymentView, {
+    global: {
+      stubs: renderLayoutStubs,
+    },
+  })
+}
+
 function oauthOrderFixture() {
   return {
     order_id: 456,
@@ -410,5 +426,41 @@ describe('PaymentView WeChat JSAPI flow', () => {
     expect(showWarning).toHaveBeenCalledWith('payment.errors.mobilePaymentFallbackToQr')
     expect(showError).not.toHaveBeenCalled()
     expect(window.localStorage.getItem(PAYMENT_RECOVERY_STORAGE_KEY)).toContain('weixin://wxpay/bizpayurl?pr=fallback-native')
+  })
+
+  it('opens the subscription tab by default when packages are available', async () => {
+    routeState.query = {}
+    getCheckoutInfo.mockResolvedValue(checkoutInfoWithPlansFixture())
+
+    const wrapper = mountPaymentViewWithLayout()
+    await flushPromises()
+
+    const html = wrapper.html()
+    expect(html).toContain('subscription-plan-card-stub')
+    expect(html).not.toContain('amount-input-stub')
+  })
+
+  it('keeps the recharge tab when requested by query', async () => {
+    routeState.query = { tab: 'recharge' }
+    getCheckoutInfo.mockResolvedValue(checkoutInfoWithPlansFixture())
+
+    const wrapper = mountPaymentViewWithLayout()
+    await flushPromises()
+
+    const html = wrapper.html()
+    expect(html).toContain('amount-input-stub')
+    expect(html).not.toContain('subscription-plan-card-stub')
+  })
+
+  it('shows both package and recharge tabs when both options are available', async () => {
+    routeState.query = {}
+    getCheckoutInfo.mockResolvedValue(checkoutInfoWithPlansFixture())
+
+    const wrapper = mountPaymentViewWithLayout()
+    await flushPromises()
+
+    const buttons = wrapper.findAll('button').map((button) => button.text())
+    expect(buttons).toContain('payment.tabTopUp')
+    expect(buttons).toContain('payment.tabSubscribe')
   })
 })

@@ -30,3 +30,21 @@ describe('AppSidebar header styles', () => {
     expect(sidebarBrandBlockMatch?.[0]).not.toContain('overflow: hidden;')
   })
 })
+
+describe('AppSidebar package purchase navigation', () => {
+  it('keeps the user packages and recharge entry on /purchase', () => {
+    expect(componentSource).toContain("path: '/purchase'")
+    expect(componentSource).toContain("label: t('nav.buySubscription')")
+  })
+
+  it('adds package management as a top-level admin entry', () => {
+    expect(componentSource).toContain("{ path: '/admin/orders/plans', label: t('nav.packageManagement'), icon: CreditCardIcon, hideInSimpleMode: true, featureFlag: flagAdminPayment }")
+  })
+
+  it('does not duplicate package management inside order management children', () => {
+    const orderManagementBlock = componentSource.match(/path: '\/admin\/orders',[\s\S]*?children: \[[\s\S]*?\n      \],/)
+
+    expect(orderManagementBlock).not.toBeNull()
+    expect(orderManagementBlock?.[0]).not.toContain("path: '/admin/orders/plans'")
+  })
+})
