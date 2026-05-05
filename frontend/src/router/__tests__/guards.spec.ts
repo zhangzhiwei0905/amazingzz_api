@@ -122,28 +122,8 @@ function simulateGuard(
     }
   }
 
-  // Backend mode: admin gets full access, non-admin blocked
-  if (authState.backendModeEnabled) {
-    if (authState.isAuthenticated && authState.isAdmin) {
-      return null
-    }
-    const allowed = ['/login', '/key-usage', '/setup', '/payment/result']
-    const callbackPaths = [
-      '/auth/callback',
-      '/auth/linuxdo/callback',
-      '/auth/oidc/callback',
-      '/auth/wechat/callback',
-      '/auth/wechat/payment/callback',
-    ]
-    const pendingAuthPaths = ['/register', '/email-verify']
-    const isAllowed =
-      allowed.some((path) => toPath === path || toPath.startsWith(path)) ||
-      callbackPaths.includes(toPath) ||
-      (authState.hasPendingAuthSession && pendingAuthPaths.includes(toPath))
-    if (!isAllowed) {
-      return '/login'
-    }
-  }
+  // Backend mode: authenticated users keep access to the self-service UI.
+  // Only unauthenticated public pages are restricted above.
 
   return null // 允许通过
 }
@@ -402,7 +382,7 @@ describe('路由守卫逻辑', () => {
       expect(redirect).toBe('/admin/dashboard')
     })
 
-    it('non-admin authenticated: /dashboard redirects to /login', () => {
+    it('non-admin authenticated: /dashboard is allowed for self-service UI', () => {
       const authState: MockAuthState = {
         isAuthenticated: true,
         isAdmin: false,
@@ -411,7 +391,20 @@ describe('路由守卫逻辑', () => {
         hasPendingAuthSession: false,
       }
       const redirect = simulateGuard('/dashboard', {}, authState)
-      expect(redirect).toBe('/login')
+      expect(redirect).toBeNull()
+    })
+
+    it('non-admin authenticated: payment and subscription pages are allowed in backend mode', () => {
+      const authState: MockAuthState = {
+        isAuthenticated: true,
+        isAdmin: false,
+        isSimpleMode: false,
+        backendModeEnabled: true,
+        hasPendingAuthSession: false,
+      }
+      expect(simulateGuard('/subscriptions', {}, authState)).toBeNull()
+      expect(simulateGuard('/purchase', { requiresPayment: true }, authState)).toBeNull()
+      expect(simulateGuard('/orders', { requiresPayment: true }, authState)).toBeNull()
     })
 
     it('non-admin authenticated: /login is allowed (no redirect loop)', () => {

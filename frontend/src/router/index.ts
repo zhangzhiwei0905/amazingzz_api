@@ -255,7 +255,7 @@ const routes: RouteRecordRaw[] = [
       title: 'Packages & Recharge',
       titleKey: 'nav.buySubscription',
       descriptionKey: 'purchase.description',
-      requiresPayment: true
+      requiresPayment: false
     }
   },
   {
@@ -267,7 +267,7 @@ const routes: RouteRecordRaw[] = [
       requiresAdmin: false,
       title: 'My Orders',
       titleKey: 'nav.myOrders',
-      requiresPayment: true
+      requiresPayment: false
     }
   },
   {
@@ -738,7 +738,9 @@ router.beforeEach((to, _from, next) => {
   }
 
 
-  // Check payment requirement (internal payment system only)
+  // Check payment requirement (internal payment system only).
+  // User-facing plan purchase/order pages stay available for the package-sales UI
+  // even when the legacy internal payment provider switch is off.
   if (to.meta.requiresPayment) {
     const paymentEnabled = appStore.cachedPublicSettings?.payment_enabled
     if (!paymentEnabled) {
@@ -764,18 +766,9 @@ router.beforeEach((to, _from, next) => {
     }
   }
 
-  // Backend mode: admin gets full access, non-admin blocked
-  if (appStore.backendModeEnabled) {
-    if (authStore.isAuthenticated && authStore.isAdmin) {
-      next()
-      return
-    }
-    const isAllowed = isBackendModePublicRouteAllowed(to.path, authStore.hasPendingAuthSession)
-    if (!isAllowed) {
-      next('/login')
-      return
-    }
-  }
+  // Backend mode no longer blocks authenticated non-admin users from the self-service UI.
+  // It only restricts unauthenticated public pages above. This keeps recharge,
+  // subscription purchase, and user order pages usable for regular accounts.
 
   // All checks passed, allow navigation
   next()
